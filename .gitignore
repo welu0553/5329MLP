@@ -6,3 +6,6 @@
 
 # pycharm cache
 __pycache__/
+
+# static
+static/

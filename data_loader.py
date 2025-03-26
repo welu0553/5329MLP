@@ -43,14 +43,14 @@ class DataLoader:
             raise TypeError("Wrong parameter, only allowed 'data' or 'label'")
 
     def iter_train(self):
-        i = DataIterable(self.train_data, self.train_label)
+        i = _DataIterable(self.train_data, self.train_label)
         return i
 
     def iter_test(self):
-        i = DataIterable(self.test_data, self.test_label)
+        i = _DataIterable(self.test_data, self.test_label)
         return i
 
-class DataIterable:
+class _DataIterable:
     def __init__(self, data, label):
         self.data = data
         self.label = label
