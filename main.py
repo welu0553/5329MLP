@@ -19,7 +19,6 @@ def main():
         test_label_path='./Assignment1-Dataset/test_label.npy'
     )
     print(dataloader)
-    print()
     pass
 
 if __name__ == '__main__':
