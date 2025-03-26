@@ -1,0 +1,8 @@
+# macOS .DS_Store file
+.DS_Store
+
+# ide
+.idea/
+
+# pycharm cache
+__pycache__/
