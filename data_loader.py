@@ -10,22 +10,97 @@ class DataLoader:
         )
 
     def __str__(self):
-        l1 = f'Train data  : shape: {self.train_data.shape}, dtype: {self.train_data.dtype}'
-        l2 = f'      labels:        {self.train_label.shape},          {self.train_label.dtype}'
-        l3 = f'Test  data  : shape: {self.test_data.shape}, dtype: {self.test_data.dtype}'
-        l4 = f'      labels:        {self.test_label.shape},          {self.test_label.dtype}'
-        sep = (len(max(l1, l2, l3, l4))) * '-'
-        total_len = len(sep)
-        l1, l2, l3, l4 = ['|' + x + (total_len - len(x)) * ' ' + '|' + '\n' for x in [l1, l2, l3, l4]]
-        separator = '|' + sep + '|\n'
-        s = '\n' + separator + l1 + l2 + l3 + l4 + separator
-        return s
+        # 辅助函数：计算数组统计量
+        def stats(arr):
+            return float(np.mean(arr)), float(np.std(arr)), float(np.min(arr)), float(np.max(arr))
+
+        # 数据准备：每行包括 set 名称、类型、原数组、dtype
+        info = [
+            ('Train', 'Data', self.train_data, self.train_data.dtype),
+            ('Train', 'Label', self.train_label_origin, self.train_label.dtype),
+            ('Test', 'Data', self.test_data, self.test_data.dtype),
+            ('Test', 'Label', self.test_label_origin, self.test_label.dtype)
+        ]
+
+        # 构造每行信息，并计算统计量
+        table_rows = []
+        for set_name, type_name, arr, dtype in info:
+            shape = arr.shape
+            mean, std, min_val, max_val = stats(arr)
+            table_rows.append((set_name, type_name, shape, str(dtype), mean, std, min_val, max_val))
+
+        # 表头定义
+        headers = ['Set', 'Type', 'Shape', 'Dtype', 'Mean', 'Std', 'Min', 'Max']
+
+        # 计算前4列（文本型）的最大宽度（考虑表头）
+        col1_width = max(len(row[0]) for row in table_rows + [("Set", "", "", "", 0, 0, 0, 0)])
+        col2_width = max(len(row[1]) for row in table_rows + [("", "Type", "", "", 0, 0, 0, 0)])
+        col3_width = max(len(str(row[2])) for row in table_rows + [("", "", "Shape", "", 0, 0, 0, 0)])
+        col4_width = max(len(row[3]) for row in table_rows + [("", "", "", "Dtype", 0, 0, 0, 0)])
+
+        # 对于数字列，设置固定宽度（例如 9 个字符）
+        col5_width = 9  # Mean
+        col6_width = 9  # Std
+        col7_width = 9  # Min
+        col8_width = 9  # Max
+
+        # 构造格式化字符串：头部和数据行使用相同格式
+        header_fmt = (
+            f"| {{:<{col1_width}}} | {{:<{col2_width}}} | {{:<{col3_width}}} | "
+            f"{{:<{col4_width}}} | {{:>{col5_width}}} | {{:>{col6_width}}} | "
+            f"{{:>{col7_width}}} | {{:>{col8_width}}} |"
+        )
+
+        # 构造分隔行
+        separator = (
+                '+' + '-' * (col1_width + 2) +
+                '+' + '-' * (col2_width + 2) +
+                '+' + '-' * (col3_width + 2) +
+                '+' + '-' * (col4_width + 2) +
+                '+' + '-' * (col5_width + 2) +
+                '+' + '-' * (col6_width + 2) +
+                '+' + '-' * (col7_width + 2) +
+                '+' + '-' * (col8_width + 2) + '+'
+        )
+
+        # 构建输出表格
+        lines = [separator]
+        lines.append(header_fmt.format(*headers))
+        lines.append(separator)
+
+        last_set = None
+        for row in table_rows:
+            # 若连续的两行所属的 set 名称相同，第一列只显示一次
+            display_set = row[0] if row[0] != last_set else ''
+            lines.append(
+                f"| {display_set:<{col1_width}} | {row[1]:<{col2_width}} | {str(row[2]):<{col3_width}} | "
+                f"{row[3]:<{col4_width}} | {row[4]:>{col5_width}.4f} | {row[5]:>{col6_width}.4f} | "
+                f"{row[6]:>{col7_width}.4f} | {row[7]:>{col8_width}.4f} |"
+            )
+            last_set = row[0]
+
+        lines.append(separator)
+        return "\n" + "\n".join(lines)
+
+    # def __str__(self):
+    #     l1 = f'Train data  : shape: {self.train_data.shape}, dtype: {self.train_data.dtype}'
+    #     l2 = f'      labels:        {self.train_label.shape},          {self.train_label.dtype}'
+    #     l3 = f'Test  data  : shape: {self.test_data.shape}, dtype: {self.test_data.dtype}'
+    #     l4 = f'      labels:        {self.test_label.shape},          {self.test_label.dtype}'
+    #     sep = (len(max(l1, l2, l3, l4))) * '-'
+    #     total_len = len(sep)
+    #     l1, l2, l3, l4 = ['|' + x + (total_len - len(x)) * ' ' + '|' + '\n' for x in [l1, l2, l3, l4]]
+    #     separator = '|' + sep + '|\n'
+    #     s = '\n' + separator + l1 + l2 + l3 + l4 + separator
+    #     return s
 
     def __data_read(self, train_data_path, train_label_path, test_data_path, test_label_path):
         self.train_data = np.load(train_data_path)
         self.train_label = np.load(train_label_path)
+        self.train_label_origin = self.train_label
         self.test_data = np.load(test_data_path)
         self.test_label = np.load(test_label_path)
+        self.test_label_origin = self.test_label
 
         # 对训练数据进行归一化（标准化），用训练集的均值和标准差
         self.mean = np.mean(self.train_data, axis=0, keepdims=True)
