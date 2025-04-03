@@ -38,10 +38,9 @@ softmax = Softmax()
 criterion = CrossEntropyLoss()
 params = model.parameters()
 
-# 使用 SGD 作为优化器（你也可以尝试 Adam）
+# 使用 SGD 作为优化器
 # optimizer = SGD(params, lr=learning_rate, momentum=0.9, weight_decay=0.0001)
-optimizer = Adam(params, lr=learning_rate,
-                 beta1=0.9, beta2=0.999, eps=1e-8)
+optimizer = Adam(params, lr=learning_rate, beta1=0.9, beta2=0.999, eps=1e-6)
 
 # ---------------------
 # 用于调试的记录变量
