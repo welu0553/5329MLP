@@ -9,8 +9,8 @@ from optimizers import SGD, Adam
 
 # ---------------------
 # 超参数设置
-learning_rate = 0.5  # 尝试提高学习率
-batch_size = 32
+learning_rate = 0.1  # 可尝试不同学习率，比如 0.5、0.1、0.05 等
+batch_size = 512
 num_epochs = 10
 
 # 数据路径（请根据实际情况修改）
@@ -27,23 +27,27 @@ print(loader)
 # ---------------------
 # 构建模型
 input_dim = loader.get_train_data().shape[1]
-hidden_dims = [64, 32]
+hidden_dims = [128, 64, 32]
 output_dim = 10
 model = MLP(input_dim, hidden_dims, output_dim, activation='relu', dropout_prob=0.1, use_batchnorm=True)
+print("Model built.")
 
 # ---------------------
 # 初始化损失和优化器
 softmax = Softmax()
 criterion = CrossEntropyLoss()
 params = model.parameters()
+
+# 使用 SGD 作为优化器（你也可以尝试 Adam）
 # optimizer = SGD(params, lr=learning_rate, momentum=0.9, weight_decay=0.0001)
-optimizer = Adam(params, lr=learning_rate)
+optimizer = Adam(params, lr=learning_rate,
+                 beta1=0.9, beta2=0.999, eps=1e-8)
 
 # ---------------------
 # 用于调试的记录变量
 loss_history = []
 grad_norm_history = []
-param_norm_change_history = []  # 用于记录每个 epoch 参数的平均范数变化
+param_norm_change_history = []  # 记录每个 epoch 平均参数更新变化
 
 # ---------------------
 # 训练循环
@@ -56,21 +60,20 @@ for epoch in range(num_epochs):
 
     for X_batch, y_batch in loader.batch_generator(mode='train', batch_size=batch_size, shuffle=True):
         num_batches += 1
-
-        # 记录当前所有参数的 L2 范数（更新前）
+        # 记录更新前所有参数的 L2 范数
         pre_param_norms = [np.linalg.norm(p['param']) for p in model.parameters()]
-        # print(model.parameters()[1]['param'])
+
         # 前向传播
         logits = model(X_batch)
         probs = softmax.forward(logits)
         loss = criterion.forward(probs, y_batch)
         epoch_loss += loss
 
-        # 反向传播计算梯度
+        # 反向传播：计算梯度并存储到各层的持久参数字典中
         grad_logits = criterion.backward(probs, y_batch)
-        model.backward(grad_logits)  # 仅计算并保存梯度
+        model.backward(grad_logits)  # 各层只计算并保存梯度
 
-        # 记录当前 mini-batch 梯度范数
+        # 记录当前 mini-batch 梯度的平均范数
         batch_norms = []
         for p in model.parameters():
             if p['grad'] is not None:
@@ -81,26 +84,26 @@ for epoch in range(num_epochs):
         # 更新参数
         optimizer.step()
 
-        # 记录更新后参数的范数
+        # 记录更新后所有参数的 L2 范数
         post_param_norms = [np.linalg.norm(p['param']) for p in model.parameters()]
-        # 计算平均参数范数变化
-        batch_change = np.mean([abs(post - pre) for post, pre in zip(post_param_norms, pre_param_norms)])
+        # 计算每个参数的更新变化（绝对值），然后求平均
+        batch_change = np.mean([abs(post - pre) for pre, post in zip(pre_param_norms, post_param_norms)])
         param_norm_changes.append(batch_change)
+        if batch_change < 1e-12:
+            print(f"DEBUG: Epoch {epoch+1}, Batch {num_batches} param change is nearly 0")
 
         # 清零梯度
         optimizer.zero_grad()
 
     avg_loss = epoch_loss / num_batches
     loss_history.append(avg_loss)
-
     avg_grad_norm = np.mean(batch_grad_norms) if batch_grad_norms else 0
     grad_norm_history.append(avg_grad_norm)
-
     avg_param_change = np.mean(param_norm_changes) if param_norm_changes else 0
     param_norm_change_history.append(avg_param_change)
 
-    print(
-        f"Epoch [{epoch + 1}/{num_epochs}], Loss: {avg_loss:.4f}, Avg Grad Norm: {avg_grad_norm:.6f}, Avg Param Change: {avg_param_change:.6f}, Time: {time.time() - start_time:.2f}s")
+    print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {avg_loss:.4f}, Avg Grad Norm: {avg_grad_norm:.6f}, "
+          f"Avg Param Change: {avg_param_change:.8f}, Time: {time.time()-start_time:.2f}s")
 
 # 绘制训练过程中的损失、梯度范数和参数变化
 plt.figure(figsize=(15, 4))

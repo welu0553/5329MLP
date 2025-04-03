@@ -51,15 +51,12 @@ class SGD(Optimizer):
 
 
 class Adam(Optimizer):
-    def __init__(self, params, lr=0.001, beta1=0.9, beta2=0.9, eps=1e-6):
+    def __init__(self, params, lr=0.01, beta1=0.9, beta2=0.999, eps=1e-6):
         super().__init__(params, lr)
         self.beta1 = beta1
         self.beta2 = beta2
         self.eps = eps
         self.t = 0
-        # 初始化每个参数的m和v
-        # self.m = [np.zeros_like(p['param']) for p in self.params]
-        # self.v = [np.zeros_like(p['param']) for p in self.params]
         self.m = [np.zeros_like(p['param'], dtype=np.float64) for p in self.params]
         self.v = [np.zeros_like(p['param'], dtype=np.float64) for p in self.params]
 
@@ -69,29 +66,18 @@ class Adam(Optimizer):
             if p['grad'] is None:
                 continue
             grad = p['grad']
-            # 更新一阶和二阶矩阵
             self.m[i] = self.beta1 * self.m[i] + (1 - self.beta1) * grad
             self.v[i] = self.beta2 * self.v[i] + (1 - self.beta2) * (grad ** 2)
-            # 计算偏差修正后的矩阵
             m_hat = self.m[i] / (1 - self.beta1 ** self.t)
             v_hat = self.v[i] / (1 - self.beta2 ** self.t)
-            # 更新参数
-            p['param'] -= self.lr * m_hat / (np.sqrt(v_hat) + self.eps)
+            update = self.lr * m_hat / (np.sqrt(v_hat) + self.eps)
+            # 调试打印信息：
+            # print(f"Adam: Param {i}, grad norm: {np.linalg.norm(grad):.8f}, "
+            #       f"m_hat norm: {np.linalg.norm(m_hat):.8f}, sqrt(v_hat) norm: {np.linalg.norm(np.sqrt(v_hat)):.8f}, "
+            #       f"update norm: {np.linalg.norm(update):.8f}")
+            p['param'] -= update
 
-    # def step(self):
-    #     self.t += 1
-    #     for i, p in enumerate(self.params):
-    #         if p['grad'] is None:
-    #             continue
-    #         grad = p['grad']
-    #         self.m[i] = self.beta1 * self.m[i] + (1 - self.beta1) * grad
-    #         self.v[i] = self.beta2 * self.v[i] + (1 - self.beta2) * (grad ** 2)
-    #         print(self.v[i])
-    #         m_hat = self.m[i] / (1 - self.beta1 ** self.t)
-    #         v_hat = self.v[i] / (1 - self.beta2 ** self.t)
-    #         update = self.lr * m_hat / (np.sqrt(v_hat) + self.eps)
-    #         # print(f"Adam: Param {i}, grad norm: {np.linalg.norm(grad):.8f}, "
-    #         #       f"m_hat norm: {np.linalg.norm(m_hat):.8f}, sqrt(v_hat) norm: {np.linalg.norm(np.sqrt(v_hat)):.8f}, "
-    #         #       f"update norm: {np.linalg.norm(update):.8f}")
-    #         p['param'] = np.array(p['param'], dtype=np.float64)  # 确保类型
-    #         p['param'] -= update
+    def zero_grad(self):
+        for p in self.params:
+            if p['grad'] is not None:
+                p['grad'] = np.zeros_like(p['param'])

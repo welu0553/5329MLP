@@ -14,6 +14,10 @@ class Linear(Module):
         self.grad_W = None
         self.grad_b = None
 
+        # 创建持久参数字典
+        self._param_dict = [{'param': self.W, 'grad': None},
+                            {'param': self.b, 'grad': None}]
+
     def forward(self, x):
         self.x = np.atleast_2d(x)
         return np.dot(self.x, self.W) + self.b
@@ -27,12 +31,19 @@ class Linear(Module):
         if lr is not None:
             self.W -= lr * self.grad_W
             self.b -= lr * self.grad_b
+
+        # 更新持久参数字典
+        self._param_dict[0]['grad'] = self.grad_W
+        self._param_dict[1]['grad'] = self.grad_b
         return dX
 
+    # def parameters(self):
+    #     # 返回字典列表，便于优化器统一处理
+    #     return [{'param': self.W, 'grad': self.grad_W},
+    #             {'param': self.b, 'grad': self.grad_b}]
+
     def parameters(self):
-        # 返回字典列表，便于优化器统一处理
-        return [{'param': self.W, 'grad': self.grad_W},
-                {'param': self.b, 'grad': self.grad_b}]
+        return self._param_dict
 
 class ReLU(Module):
     def forward(self, x):
@@ -117,6 +128,10 @@ class BatchNorm(Module):
         self.grad_gamma = None
         self.grad_beta = None
 
+        # 创建持久参数字典，用于保存参数及其梯度
+        self._param_dict = [{'param': self.gamma, 'grad': None},
+                            {'param': self.beta, 'grad': None}]
+
     def forward(self, x):
         if self.training:
             self.mean = np.mean(x, axis=0, keepdims=True)
@@ -141,8 +156,16 @@ class BatchNorm(Module):
             N * dxhat - np.sum(dxhat, axis=0, keepdims=True) -
             self.x_norm * np.sum(dxhat * self.x_norm, axis=0, keepdims=True)
         )
+
+        # 更新持久参数字典中的梯度
+        self._param_dict[0]['grad'] = self.grad_gamma
+        self._param_dict[1]['grad'] = self.grad_beta
         return dx
 
+    # def parameters(self):
+    #     return [{'param': self.gamma, 'grad': self.grad_gamma},
+    #             {'param': self.beta, 'grad': self.grad_beta}]
+
     def parameters(self):
-        return [{'param': self.gamma, 'grad': self.grad_gamma},
-                {'param': self.beta, 'grad': self.grad_beta}]
+        # 返回持久参数字典
+        return self._param_dict
