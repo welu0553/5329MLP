@@ -20,7 +20,7 @@ project_root/
 │   ├── layers.py         # 各种层的实现（Linear, ReLU, GELU, Dropout, BatchNorm 等）
 │   └── mlp_model.py      # MLP 模型定义，组合各个基础层
 ├── utils/                # 工具模块（如评估指标、绘图函数等，可选）
-│   └── metrics.py        # 评估指标计算
+│   └── evaluation.py        # 评估指标计算
 ├── tests/                # 单元测试（选做）
 │   └── test_models.py
 └── README.md             # 项目说明文档
