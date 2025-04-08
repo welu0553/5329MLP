@@ -60,7 +60,6 @@ class ReLU(Module):
         return []  # 无参数
 
 
-'''额外实现'''
 class GELU(Module):
     def forward(self, x):
         self.x = x

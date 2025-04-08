@@ -86,19 +86,6 @@ def permutations_params(para_grad_pool):
     当 'opt' 为 'Adam' 时，选择 'opt_para_Adam' 中的内容。
     否则，对所有键直接进行笛卡尔积组合。
 
-    参数：
-        para_grad_pool: 一个字典，其中每个键对应一个可能的取值列表。
-
-        例如：
-        {
-        'input_dim': [128],
-        'hidden_dims': [[1024, 512, 256], [512, 256], [256, 128]],
-        'output_dim': [10],
-        'activation': ['relu', 'gelu'],
-        'dropout_prob': [0.01, 0.05, 0.1, 0.5, 0.4],
-        'use_batchnorm': [True, False]
-        }
-
     返回：
         一个包含所有超参数组合的列表，每个元素为一个字典。
     """
