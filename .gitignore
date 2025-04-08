@@ -9,3 +9,6 @@ __pycache__/
 
 # static
 static/
+
+# model saves
+saves/
