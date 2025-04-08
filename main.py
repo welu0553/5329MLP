@@ -138,7 +138,7 @@ def permutations_params(para_grad_pool):
         return permutations_params_list
 
 
-def generate_model_filename(prefix="MLP", extension="npz"):
+def generate_model_filename(prefix="relu", extension="npz"):
     """
     生成一个包含当前时间戳的模型文件名，格式例如：
     "MLP_20230425_142530.npz"
