@@ -1,24 +1,3 @@
-"""
-project_root/
-├── main.py               # Entry point of the program, integrates training/testing/ablation workflow
-├── config.py             # Configuration file, stores hyperparameters and paths
-├── data_loader.py        # Dataset loader module (DataLoader class)
-├── losses.py             # Loss functions module (Softmax, CrossEntropy, etc.)
-├── optimizers.py         # Optimizer module (SGD, Adam, etc.)
-├── models/               # Model-related modules
-│   ├── __init__.py       # Module initialization
-│   ├── module.py         # Base Module class and Sequential container
-│   ├── layers.py         # Implementation of layers (Linear, ReLU, GELU, Dropout, BatchNorm, etc.)
-│   └── mlp_model.py      # MLP model definition using the defined layers
-├── utils/                # Utility functions (e.g., evaluation metrics, plotting tools)
-│   └── evaluation.py     # Evaluation metric calculations
-├── tests/                # (Optional) Unit test scripts
-│   └── test_models.py
-└── README.md             # Project documentation
-
-
-"""
-
 import os
 import csv
 import itertools
