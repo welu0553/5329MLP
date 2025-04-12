@@ -1,6 +1,5 @@
 import os
 import csv
-import itertools
 import matplotlib.pyplot as plt
 from datetime import datetime
 import numpy as np
@@ -17,6 +16,16 @@ def generate_model_filename(prefix="relu", extension="npz"):
 
 # Create all combinations of hyperparameters and optimizer-specific parameters
 
+def product(lists):
+    result = [[]]
+    for lst in lists:
+        new_result = []
+        for r in result:
+            for item in lst:
+                new_result.append(r + [item])
+        result = new_result
+    return result
+
 def permutations_params(pool):
     pool = pool.copy()
     if all(k in pool for k in ['opt_para_SGD', 'opt_para_Adam', 'opt']):
@@ -24,7 +33,8 @@ def permutations_params(pool):
         adam_params = pool.pop('opt_para_Adam')
         base_keys = list(pool.keys())
         base_values = [pool[k] for k in base_keys]
-        base_combinations = list(itertools.product(*base_values))
+        # generate all combinations
+        base_combinations = product(base_values)
         result = []
         for comb in base_combinations:
             base_dict = dict(zip(base_keys, comb))
@@ -42,7 +52,8 @@ def permutations_params(pool):
     else:
         keys = list(pool.keys())
         values = [pool[k] for k in keys]
-        return [dict(zip(keys, comb)) for comb in itertools.product(*values)]
+        # generate all combinations, and transfer them to dictionary
+        return [dict(zip(keys, comb)) for comb in product(values)]
 
 # Train and save models using all combinations of hyperparameters
 
