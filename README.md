@@ -1,5 +1,5 @@
-# 5329MLP
-### 1. 项目说明
+# 5329MLP Project Documentation
+### 1. Project Description
 
 This project implements a modular MLP (Multi-Layer Perceptron) neural network training platform based on Python and Numpy, supporting the entire process from data loading, model building, batch training, automatic evaluation, model selection, to ablation experiments. The core functions of this project are divided into the following parts:
 
@@ -10,23 +10,24 @@ Model testing and evaluation automatically reads the saved model file and unifor
 Model selection and result output Automatically select the model with the highest macro-F1 score among all models as the ‘best model’; The accuracy, F1 score and corresponding hyperparameter configuration of the best model are output; the visualization is saved as an image best_model_result.png.
 Ablation experiment Based on the structure of the ‘best model’, the following three structural ablation experiments are performed: Remove Dropout (set to 0) Turn off BatchNorm Replace the activation function from ReLU to GELU Each structural variant is reinitialised and trained to ensure the fairness of the experiment; After all variants are tested, the ablation comparison chart ablation_result.pngis automatically generated to show the changes in Accuracy and Macro-F1; The specific hyperparameter configuration of each ablation experiment is also output for easy tracking and reproduction.
 
-### 2. 项目架构
+### 2. Project Structure
 ```plaintext
 project_root/
-├── main.py               # 程序入口。可以通过设置超参数进行训练或测试模型
-├── data_loader.py        # 数据加载模块。将传入的数据输出为可迭代对象，并可选择性使用mini-batch及onehot编码
-├── losses.py             # 损失函数。包含Softmax和CrossEntropy
-├── optimizers.py         # 优化器。包含SGD, Adam
-├── models/               # 模型模块
+├── main.py               # Program entry. You can train or test the model by setting hyperparameters
+├── data_loader.py        # Data loading module. Outputs the incoming data as an iterable object, and optionally uses mini-batch and onehot encoding
+├── losses.py             # Loss function. Contains Softmax and CrossEntropy
+├── optimizers.py         # Optimizer. Contains SGD, Adam
+├── models/               # Model module
 │   ├── __init__.py       # Module initialization
-│   ├── module.py         # 基础模型模块。包含所有层的父类Module以及序列类Sequential
-│   ├── layers.py         # Implementation of layers. 包含Linear, ReLU, GELU, Dropout, BatchNorm
-│   └── mlp_model.py      # MLP模块。用于实现MLP的各项功能
+│   ├── module.py         # Basic model module. Contains the parent class Module for all layers and the Sequential class
+│   ├── layers.py         # Implementation of layers. Contains Linear, ReLU, GELU, Dropout, BatchNorm
+│   └── mlp_model.py      # MLP module. Used to implement various functionalities of MLP
 ├── utils/                # Utility functions
 │   ├── __init__.py       # Module initialization
-│   ├── evaluation.py     # 评估指标
-│   ├── functions.py      # 函数文件。包含各种用到的函数，增强代码可读性
-│   ├── training_model.py # 模型训练脚本文件。封装了整个模型训练脚本，便于在主函数中训练模型
-│   └── testing_model.py  # 模型测试脚本文件。封装了整个模型测试脚本，便于在主函数中测试模型
+│   ├── evaluation.py     # Evaluation indicators
+│   ├── functions.py      # Function file. Contains various helper functions to enhance code readability
+│   ├── training_model.py # Model training script. Encapsulates the entire model training process for convenient use in the main function
+│   └── testing_model.py  # Model testing script. Encapsulates the entire model testing process for convenient use in the main function
 └── README.md             # Project documentation
+
 ```
