@@ -1,215 +1,222 @@
 """
-流程:
-    1. 数据集导入模块
-
-    2. MLP模型模块
-
-    3. 损失函数优化器模块
-
-    4. 训练 / 测试模块
-
 project_root/
-├── main.py               # 程序入口，整合训练/测试流程
-├── config.py             # 配置文件，存放超参数、路径等信息
-├── data_loader.py        # 数据加载模块（DataLoader 类）
-├── losses.py             # 损失函数模块（Softmax, CrossEntropy 等）
-├── optimizers.py         # 优化器模块（SGD、Adam 等）
-├── models/               # 模型相关模块
-│   ├── __init__.py       # 模块初始化文件
-│   ├── module.py         # Module 基类及 Sequential 容器
-│   ├── layers.py         # 各种层的实现（Linear, ReLU, GELU, Dropout, BatchNorm 等）
-│   └── mlp_model.py      # MLP 模型定义，组合各个基础层
-├── utils/                # 工具模块（如评估指标、绘图函数等，可选）
-│   └── evaluation.py        # 评估指标计算
-├── tests/                # 单元测试（选做）
+├── main.py               # Entry point of the program, integrates training/testing/ablation workflow
+├── config.py             # Configuration file, stores hyperparameters and paths
+├── data_loader.py        # Dataset loader module (DataLoader class)
+├── losses.py             # Loss functions module (Softmax, CrossEntropy, etc.)
+├── optimizers.py         # Optimizer module (SGD, Adam, etc.)
+├── models/               # Model-related modules
+│   ├── __init__.py       # Module initialization
+│   ├── module.py         # Base Module class and Sequential container
+│   ├── layers.py         # Implementation of layers (Linear, ReLU, GELU, Dropout, BatchNorm, etc.)
+│   └── mlp_model.py      # MLP model definition using the defined layers
+├── utils/                # Utility functions (e.g., evaluation metrics, plotting tools)
+│   └── evaluation.py     # Evaluation metric calculations
+├── tests/                # (Optional) Unit test scripts
 │   └── test_models.py
-└── README.md             # 项目说明文档
+└── README.md             # Project documentation
+
 
 """
 
+import os
+import csv
+import itertools
+import matplotlib.pyplot as plt
+from datetime import datetime
+import numpy as np
 from data_loader import DataLoader
 from models import MLP
-from utils import training_model, save_model, load_model, assign_parameters, testing_model
-import itertools
-import copy
-from datetime import datetime
+from utils import load_model, assign_parameters, testing_model, training_model, save_model
 
 
-def training(model, para_grad, loader):
-    histories = training_model(model, loader, para_grad)
-    loss_history, grad_norm_history, param_norm_change_history = histories
-    return loss_history, grad_norm_history, param_norm_change_history
+# Generate a unique filename using a timestamp
 
+def generate_model_filename(prefix="relu", extension="npz"):
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    return f"{prefix}_{timestamp}.{extension}"
 
-def train_model(hyperparams, para_grad, loader):
-    model = MLP(**hyperparams)
-    training(model, para_grad, loader)
+# Create all combinations of hyperparameters and optimizer-specific parameters
 
-    # 在训练循环结束后调用保存函数
-    save_paras = {
-        'hyperparams': hyperparams,
-        'para_grad': para_grad
-    }
-    model_name = './saves/' + generate_model_filename()
-    save_model(model, save_paras, model_name) #  "./saves/model_test.npz"
-    return save_paras, model
-
-def test_model(loader, model_name='model_test.npz'):
-    url = './saves/' + model_name
-    # 读入模型
-    model_params, loaded_params = load_model(url)
-    hyperparams = loaded_params['hyperparams']
-    print("Loaded hyperparameters:", hyperparams)
-    # 利用参数恢复模型
-    model = MLP(**hyperparams)
-    assign_parameters(model, model_params)
-
-    # ---------------------
-    # 测试模型准确率
-    result = testing_model(model, loader)
-    # acc, precisions, recalls, f1s, ma_f1, cm
-    [print(x, '\n') for x in result]
-
-    save_paras = {
-        'hyperparams': hyperparams,
-        'para_grad': loaded_params
-    }
-    return save_paras, model
-
-
-def permutations_params(para_grad_pool):
-    """
-    根据 para_grad_pool 中的各个键取值生成所有超参数组合。
-
-    如果池中同时包含 'opt_para_SGD'、'opt_para_Adam' 和 'opt'，
-    则按条件组合：当 'opt' 为 'SGD' 时，选择 'opt_para_SGD' 中的内容；
-    当 'opt' 为 'Adam' 时，选择 'opt_para_Adam' 中的内容。
-    否则，对所有键直接进行笛卡尔积组合。
-
-    返回：
-        一个包含所有超参数组合的列表，每个元素为一个字典。
-    """
-    pool = copy.deepcopy(para_grad_pool)
-
-    # 如果池中包含特定条件键，则进行条件处理
+def permutations_params(pool):
+    pool = pool.copy()
     if all(k in pool for k in ['opt_para_SGD', 'opt_para_Adam', 'opt']):
         sgd_params = pool.pop('opt_para_SGD')
         adam_params = pool.pop('opt_para_Adam')
         base_keys = list(pool.keys())
         base_values = [pool[k] for k in base_keys]
         base_combinations = list(itertools.product(*base_values))
-        permutations_params_list = []
+        result = []
         for comb in base_combinations:
             base_dict = dict(zip(base_keys, comb))
-            if base_dict.get('opt') == 'SGD':
-                for opt_param in sgd_params:
-                    new_params = base_dict.copy()
-                    new_params['opt_para'] = opt_param
-                    permutations_params_list.append(new_params)
-            elif base_dict.get('opt') == 'Adam':
-                for opt_param in adam_params:
-                    new_params = base_dict.copy()
-                    new_params['opt_para'] = opt_param
-                    permutations_params_list.append(new_params)
-            else:
-                # 如果 opt 值不是 'SGD' 或 'Adam'，则直接加入
-                permutations_params_list.append(base_dict)
-        return permutations_params_list
+            if base_dict['opt'] == 'SGD':
+                for p in sgd_params:
+                    temp = base_dict.copy()
+                    temp['opt_para'] = p
+                    result.append(temp)
+            elif base_dict['opt'] == 'Adam':
+                for p in adam_params:
+                    temp = base_dict.copy()
+                    temp['opt_para'] = p
+                    result.append(temp)
+        return result
     else:
-        # 普通参数池：对所有键直接进行笛卡尔积组合
         keys = list(pool.keys())
-        values_lists = [pool[k] for k in keys]
-        permutations_params_list = []
-        for comb in itertools.product(*values_lists):
-            permutations_params_list.append(dict(zip(keys, comb)))
-        return permutations_params_list
+        values = [pool[k] for k in keys]
+        return [dict(zip(keys, comb)) for comb in itertools.product(*values)]
 
+# Train and save models using all combinations of hyperparameters
 
-def generate_model_filename(prefix="relu", extension="npz"):
-    """
-    生成一个包含当前时间戳的模型文件名，格式例如：
-    "MLP_20230425_142530.npz"
+def train_all_models():
+    loader = DataLoader(
+        './Assignment1-Dataset/train_data.npy',
+        './Assignment1-Dataset/train_label.npy',
+        './Assignment1-Dataset/test_data.npy',
+        './Assignment1-Dataset/test_label.npy',
+        num_classes=10
+    )
 
-    返回：
-        一个字符串，作为文件名。
-    """
-    # 获取当前日期和时间，格式化为 YYYYMMDD_HHMMSS 的字符串
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"{prefix}_{timestamp}.{extension}"
-    return filename
-
-def main():
-    # 加载数据
-    train_data_path = './Assignment1-Dataset/train_data.npy'
-    train_label_path = './Assignment1-Dataset/train_label.npy'
-    test_data_path = './Assignment1-Dataset/test_data.npy'
-    test_label_path = './Assignment1-Dataset/test_label.npy'
-    loader = DataLoader(train_data_path, train_label_path, test_data_path, test_label_path, num_classes=10)
-    print(loader)
-
-    # 定义参数
     hyperparams_pool = {
-        'input_dim': [128],  # 请勿修改
-        'hidden_dims': [[256, 128],
-                        [512, 256],
-                        [1024, 512, 256]],
-        'output_dim': [10],  # 请勿修改
-        'activation': ['relu'],  # 'gelu'
+        'input_dim': [128],
+        'hidden_dims': [[256, 128], [512, 256], [1024, 512, 256]],
+        'output_dim': [10],
+        'activation': ['relu'],
         'dropout_prob': [0.0, 0.1],
         'use_batchnorm': [True]
     }
-    hyperparams_list = permutations_params(hyperparams_pool)
-
     para_grad_pool = {
         'learning_rate': [0.005, 0.01],
         'batch_size': [512, 256],
         'num_epochs': [200],
-        'opt': ['SGD', 'Adam'],  # 'Adam'
-        'opt_para_SGD': [{'momentum': 0.9, 'weight_decay': 0.0001},
-                         {'momentum': 0.92, 'weight_decay': 0.0001}],
-        'opt_para_Adam': [{'beta1': 0.9, 'beta2': 0.999, 'eps': 1e-6},
-                          {'beta1': 0.92, 'beta2': 0.98, 'eps': 1e-6}],
+        'opt': ['SGD', 'Adam'],
+        'opt_para_SGD': [{'momentum': 0.9, 'weight_decay': 0.0001}, {'momentum': 0.92, 'weight_decay': 0.0001}],
+        'opt_para_Adam': [{'beta1': 0.9, 'beta2': 0.999, 'eps': 1e-6}, {'beta1': 0.92, 'beta2': 0.98, 'eps': 1e-6}],
         'shuffle': [True]
     }
+    hyperparams_list = permutations_params(hyperparams_pool)
     para_grad_list = permutations_params(para_grad_pool)
-    print(len(hyperparams_list), len(para_grad_list))
-    # 训练模型
-    i = 0
-    for hyperparams in hyperparams_list:
-        for para_grad in para_grad_list:
-            i += 1
-            print(f'轮数:{i}/{len(hyperparams_list) * len(para_grad_list)}')
-            print('当前参数:')
-            print('hyperparams:', hyperparams)
-            print('para_grad:', para_grad)
-            train_model(hyperparams, para_grad, loader)
 
-    # 测试模型
-    # test_model(loader, 'model_test.npz')
+    print(f"Total combinations: {len(hyperparams_list) * len(para_grad_list)}")
 
+    for i, hyperparams in enumerate(hyperparams_list):
+        for j, para_grad in enumerate(para_grad_list):
+            model = MLP(**hyperparams)
+            training_model(model, loader, para_grad)
+            save_model(model, {'hyperparams': hyperparams, 'para_grad': para_grad},
+                       f"./saves/{generate_model_filename()}")
+
+# Evaluate all models and return the best performing one based on Macro-F1
+
+def evaluate_all_models():
+    loader = DataLoader(
+        './Assignment1-Dataset/train_data.npy',
+        './Assignment1-Dataset/train_label.npy',
+        './Assignment1-Dataset/test_data.npy',
+        './Assignment1-Dataset/test_label.npy',
+        num_classes=10
+    )
+
+    model_dir = './saves'
+    model_files = [f for f in os.listdir(model_dir) if f.endswith('.npz')]
+    results = []
+
+    for model_file in model_files:
+        model_params, loaded = load_model(os.path.join(model_dir, model_file))
+        model = MLP(**loaded['hyperparams'])
+        assign_parameters(model, model_params)
+        result = testing_model(model, loader)
+        acc, f1 = result[0], result[4]
+        results.append((model_file, acc, f1, loaded['hyperparams'], loaded['para_grad']))
+
+    results.sort(key=lambda x: x[2], reverse=True)
+    best = results[0]
+    best_name, best_acc, best_f1, best_hyper, best_grad = best
+
+    # Save evaluation results for all models
+    with open("all_model_results.csv", "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(['Model', 'Accuracy', 'Macro-F1', 'Hyperparams', 'TrainingParams'])
+        for r in results:
+            writer.writerow([r[0], r[1], r[2], str(r[3]), str(r[4])])
+
+    print(f"\n Tested all {len(results)} models.")
+    print(f"Best Model: {best_name}\nAccuracy: {best_acc:.4f}, Macro-F1: {best_f1:.4f}\nHyperparams: {best_hyper}\nTrain Params: {best_grad}")
+
+    # Visualize best model performance
+    plt.figure(figsize=(6, 4))
+    plt.plot(['Accuracy', 'Macro-F1'], [best_acc, best_f1], marker='o', linewidth=2, color='royalblue')
+    plt.title('Best Model Performance', fontsize=12)
+    plt.xlabel('Metric')
+    plt.ylabel('Score')
+    plt.ylim(0, 1)
+    plt.grid(True, linestyle='--', alpha=0.6)
+    plt.tight_layout()
+    plt.savefig('best_model_result.png')
+
+    return best_hyper, best_grad
+
+# Run ablation experiments on variants of the best model
+
+def run_ablation_experiment(best_hyper, best_grad):
+    loader = DataLoader(
+        './Assignment1-Dataset/train_data.npy',
+        './Assignment1-Dataset/train_label.npy',
+        './Assignment1-Dataset/test_data.npy',
+        './Assignment1-Dataset/test_label.npy',
+        num_classes=10
+    )
+
+    variants = [
+        ('Original', best_hyper),
+        ('No Dropout', {**best_hyper, 'dropout_prob': 0.0}),
+        ('No BatchNorm', {**best_hyper, 'use_batchnorm': False}),
+        ('GELU Activation', {**best_hyper, 'activation': 'gelu'})
+    ]
+
+    ablation_results = []
+    for name, hparams in variants:
+        model = MLP(**hparams)
+        training_model(model, loader, best_grad)
+        result = testing_model(model, loader)
+        acc, f1 = result[0], result[4]
+        ablation_results.append((name, acc, f1, hparams))
+
+    names = [r[0] for r in ablation_results]
+    accs = [r[1] for r in ablation_results]
+    f1s = [r[2] for r in ablation_results]
+    params = [str(r[3]) for r in ablation_results]
+
+    # Save and visualize ablation experiment results
+    plt.figure(figsize=(10, 6))
+    x = np.arange(len(names))
+    plt.plot(x, accs, marker='o', label='Accuracy', linewidth=2)
+    plt.plot(x, f1s, marker='s', label='Macro-F1', linewidth=2)
+    plt.xticks(x, names, rotation=15, fontsize=10)
+    plt.ylim(0, 1)
+    plt.grid(True, linestyle='--', alpha=0.6)
+    plt.legend()
+    plt.title('Ablation Study on Best Model', fontsize=14)
+
+    # Annotate each point with accuracy and f1
+    for i, (acc, f1) in enumerate(zip(accs, f1s)):
+        plt.text(i, acc + 0.02, f"Acc: {acc:.4f}", ha='center', fontsize=9, color='blue')
+        plt.text(i, f1 + 0.02, f"F1: {f1:.4f}", ha='center', fontsize=9, color='darkorange')
+
+    plt.tight_layout()
+    plt.savefig('ablation_result.png')
+    print("Ablation experiment results saved as ablation_result.png")
+
+    # Print table-like output in terminal
+    print("\n===== Ablation Results =====")
+    for name, acc, f1, hparam in ablation_results:
+        print(f"{name:<15} | Acc: {acc:.4f} | F1: {f1:.4f} | Hyperparams: {hparam}")
+
+# Run full pipeline
 if __name__ == '__main__':
-    main()
+    # Step 1: Train all models with different hyperparameter settings
+    #train_all_models()
+    # Step 2: Evaluate all trained models and get the best configuration
+    best_hyper, best_grad = evaluate_all_models()
+    # Step 3: Perform ablation study on the best model
+    run_ablation_experiment(best_hyper, best_grad)
 
-
-    '''
-    # 调试用单参
-    
-    hyperparams = {
-        'input_dim': loader.get_train_data().shape[1],
-        'hidden_dims': [1024, 512, 256],
-        'output_dim': 10,
-        'activation': 'relu',
-        'dropout_prob': 0.01,
-        'use_batchnorm': True
-    }
-    
-    para_grad = {
-        'learning_rate': 0.01,
-        'batch_size': 512,
-        'num_epochs': 5,
-        'opt': 'SGD',  # 'Adam'
-        'opt_para': {'momentum': 0.9, 'weight_decay': 0.0001},
-        # 'opt_para': {'beta1': 0.9, 'beta2': 0.999, 'eps': 1e-6},
-        'shuffle': True
-    }
-    '''

@@ -2,62 +2,68 @@ from collections import OrderedDict
 
 class Module:
     """
-    统一的接口和参数管理类
-    所有后续实现的层（eg: Linear, ReLU, Dropout, BatchNorm etc.）都应继承此基类
+    Base class for all neural network layers.
+
+    Attributes:
+        training (bool): Whether the module is in training mode. Default is True.
+        _modules (dict): A dictionary to hold submodules added via add_module().
     """
+
     def __init__(self):
-        # 训练模式（默认）
         self.training = True
-        # 子模块存储单元
         self._modules = {}
 
     def forward(self, x):
         """
-        向前传播，必须重写
+        Forward pass. Must be overridden by subclasses.
 
-        :param x:
-        :return:
+        Args:
+            x (np.ndarray): Input tensor.
+        Returns:
+            np.ndarray: Output tensor.
         """
-        raise NotImplementedError('方法缺失，子类必须重写forward方法！')
+        raise NotImplementedError('Missing method: subclasses must override forward().')
 
     def __call__(self, x):
         """
-        重载，使类实例可以直接调用forward func
-        :param x:
-        :return:
+        Make the instance callable. This calls the forward() method.
+
+        Args:
+            x (np.ndarray): Input tensor.
+        Returns:
+            np.ndarray: Output tensor from forward pass.
         """
         return self.forward(x)
 
     def parameters(self):
         """
-        recursion收集本模块及子类的所有可训练参数
-        :return: list，每个元素是一个numpy array
+        Recursively collect all trainable parameters from this module and submodules.
+
+        Returns:
+            list: A list of numpy arrays representing parameters (e.g. weights and biases).
         """
         params = []
-        # W: weight
         if hasattr(self, 'W'):
             params.append(self.W)
-        # b: bias
         if hasattr(self, 'b'):
             params.append(self.b)
-
-        # 收集子类模块的参数
         for module in self._modules.values():
             params.extend(module.parameters())
         return params
 
     def add_module(self, name, module):
         """
-        将子模块添加到本模块中
-        :param name:
-        :param module:
-        :return:
+        Add a submodule to this module.
+
+        Args:
+            name (str): Name of the submodule.
+            module (Module): The submodule instance to add.
         """
         self._modules[name] = module
 
     def train(self):
         """
-        设置本模块及所有子模块为train模式
+        Set this module and all its submodules to training mode.
         """
         self.training = True
         for module in self._modules.values():
@@ -65,27 +71,28 @@ class Module:
 
     def eval(self):
         """
-        设置本模块及所有子模块为评估模式
+        Set this module and all its submodules to evaluation mode.
         """
         self.training = False
         for module in self._modules.values():
             module.eval()
 
+
 class Sequential(Module):
     """
-    主要目的:
-        将多个模块（都继承自 Module 基类）
-        按顺序组合在一起，从而简化整体模型的构建和前向传播流程
+    A container to wrap multiple modules into a sequence.
+
+    Purpose:
+        Automatically chain modules together in the order they are added,
+        simplifying model building and forward/backward propagation.
+
+    Attributes:
+        modules (OrderedDict): A dictionary mapping names to child modules, in order.
     """
+
     def __init__(self, *args):
         super().__init__()
-        """
-        Sequential 可以允许接收任何数量的模块。
-        当只传入一个模块的时候，则直接使用它，
-        若传入多个模块，则将它们添加到一个 OrderedDict 中，
-        key 为字符串形式的 index
-        """
-        # 这里使用了 OrderedDict 而不是 list, 为的是方便后期调试或扩展
+        # Accept a single OrderedDict or multiple modules as args
         if len(args) == 1 and isinstance(args[0], OrderedDict):
             self.modules = args[0]
         else:
@@ -94,7 +101,14 @@ class Sequential(Module):
                 self.modules[str(index)] = module
 
     def forward(self, x):
-        # 依次调用各子模块的 forward 方法
+        """
+        Forward pass through all submodules in sequence.
+
+        Args:
+            x (np.ndarray): Input tensor.
+        Returns:
+            np.ndarray: Output tensor after all layers.
+        """
         for name, module in self.modules.items():
             if hasattr(module, 'training'):
                 module.training = self.training
@@ -103,36 +117,48 @@ class Sequential(Module):
 
     def backward(self, grad_output, lr=None):
         """
-        反向传播，逆序调用各子模块的 backward 方法。
-        注意：如果子模块的 backward 需要 lr 参数（例如 Linear 层），则传入 lr。
+        Backward pass through all submodules in reverse order.
+
+        Args:
+            grad_output (np.ndarray): Upstream gradient.
+            lr (float or None): Learning rate if needed by certain layers (e.g., Linear).
+        Returns:
+            np.ndarray: Gradient w.r.t. input.
         """
-        # 逆序遍历子模块
         for name, module in reversed(self.modules.items()):
-            # 如果模块有 backward 方法，检查它是否需要 lr 参数
             if hasattr(module, 'backward'):
-                # 这里做一个简单判断：若模块类型是 Linear，则传入 lr，否则只传入 grad_output
-                if hasattr(module, 'W'):  # 假设 Linear 层有 W 属性
+                # If it's a Linear layer (detected via 'W'), pass learning rate
+                if hasattr(module, 'W'):
                     grad_output = module.backward(grad_output, lr)
                 else:
                     grad_output = module.backward(grad_output)
         return grad_output
 
-
     def parameters(self):
-        # 递归收集各子模块的可训练参数
+        """
+        Recursively collect parameters from all submodules.
+
+        Returns:
+            list: All trainable parameters from the sequence.
+        """
         params = []
         for name, module in self.modules.items():
             params.extend(module.parameters())
         return params
 
-
     def train(self):
+        """
+        Set all modules to training mode.
+        """
         self.training = True
         for module in self.modules.values():
             if hasattr(module, 'train'):
                 module.train()
 
     def eval(self):
+        """
+        Set all modules to evaluation mode.
+        """
         self.training = False
         for module in self.modules.values():
             if hasattr(module, 'eval'):

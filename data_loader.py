@@ -1,20 +1,27 @@
 import numpy as np
 
 class DataLoader:
-    def __init__(self, train_data_path, train_label_path,
-                test_data_path, test_label_path, num_classes=10):
+    def __init__(self, train_data_path, train_label_path, test_data_path, test_label_path, num_classes=10):
+        """
+        Load training and testing datasets from given .npy files and preprocess them.
+
+        Args:
+            train_data_path (str): Path to training data (.npy)
+            train_label_path (str): Path to training labels (.npy)
+            test_data_path (str): Path to test data (.npy)
+            test_label_path (str): Path to test labels (.npy)
+            num_classes (int): Number of classification classes
+        """
         self.num_classes = num_classes
-        self.__data_read(
-            train_data_path, train_label_path,
-            test_data_path, test_label_path
-        )
+        self.__data_read(train_data_path, train_label_path, test_data_path, test_label_path)
 
     def __str__(self):
-        # 辅助函数：计算数组统计量
+        """
+        Format and return dataset information as a summary table including shape, dtype, mean, std, min, and max.
+        """
         def stats(arr):
             return float(np.mean(arr)), float(np.std(arr)), float(np.min(arr)), float(np.max(arr))
 
-        # 数据准备：每行包括 set 名称、类型、原数组、dtype
         info = [
             ('Train', 'Data', self.train_data, self.train_data.dtype),
             ('Train', 'Label', self.train_label_origin, self.train_label.dtype),
@@ -22,55 +29,40 @@ class DataLoader:
             ('Test', 'Label', self.test_label_origin, self.test_label.dtype)
         ]
 
-        # 构造每行信息，并计算统计量
         table_rows = []
         for set_name, type_name, arr, dtype in info:
             shape = arr.shape
             mean, std, min_val, max_val = stats(arr)
             table_rows.append((set_name, type_name, shape, str(dtype), mean, std, min_val, max_val))
 
-        # 表头定义
         headers = ['Set', 'Type', 'Shape', 'Dtype', 'Mean', 'Std', 'Min', 'Max']
 
-        # 计算前4列（文本型）的最大宽度（考虑表头）
         col1_width = max(len(row[0]) for row in table_rows + [("Set", "", "", "", 0, 0, 0, 0)])
         col2_width = max(len(row[1]) for row in table_rows + [("", "Type", "", "", 0, 0, 0, 0)])
         col3_width = max(len(str(row[2])) for row in table_rows + [("", "", "Shape", "", 0, 0, 0, 0)])
         col4_width = max(len(row[3]) for row in table_rows + [("", "", "", "Dtype", 0, 0, 0, 0)])
+        col5_width = col6_width = col7_width = col8_width = 9
 
-        # 对于数字列，设置固定宽度（例如 9 个字符）
-        col5_width = 9  # Mean
-        col6_width = 9  # Std
-        col7_width = 9  # Min
-        col8_width = 9  # Max
-
-        # 构造格式化字符串：头部和数据行使用相同格式
         header_fmt = (
             f"| {{:<{col1_width}}} | {{:<{col2_width}}} | {{:<{col3_width}}} | "
             f"{{:<{col4_width}}} | {{:>{col5_width}}} | {{:>{col6_width}}} | "
             f"{{:>{col7_width}}} | {{:>{col8_width}}} |"
         )
 
-        # 构造分隔行
         separator = (
-                '+' + '-' * (col1_width + 2) +
-                '+' + '-' * (col2_width + 2) +
-                '+' + '-' * (col3_width + 2) +
-                '+' + '-' * (col4_width + 2) +
-                '+' + '-' * (col5_width + 2) +
-                '+' + '-' * (col6_width + 2) +
-                '+' + '-' * (col7_width + 2) +
-                '+' + '-' * (col8_width + 2) + '+'
+            '+' + '-' * (col1_width + 2) +
+            '+' + '-' * (col2_width + 2) +
+            '+' + '-' * (col3_width + 2) +
+            '+' + '-' * (col4_width + 2) +
+            '+' + '-' * (col5_width + 2) +
+            '+' + '-' * (col6_width + 2) +
+            '+' + '-' * (col7_width + 2) +
+            '+' + '-' * (col8_width + 2) + '+'
         )
 
-        # 构建输出表格
-        lines = [separator]
-        lines.append(header_fmt.format(*headers))
-        lines.append(separator)
-
+        lines = [separator, header_fmt.format(*headers), separator]
         last_set = None
         for row in table_rows:
-            # 若连续的两行所属的 set 名称相同，第一列只显示一次
             display_set = row[0] if row[0] != last_set else ''
             lines.append(
                 f"| {display_set:<{col1_width}} | {row[1]:<{col2_width}} | {str(row[2]):<{col3_width}} | "
@@ -78,23 +70,13 @@ class DataLoader:
                 f"{row[6]:>{col7_width}.4f} | {row[7]:>{col8_width}.4f} |"
             )
             last_set = row[0]
-
         lines.append(separator)
         return "\n" + "\n".join(lines)
 
-    # def __str__(self):
-    #     l1 = f'Train data  : shape: {self.train_data.shape}, dtype: {self.train_data.dtype}'
-    #     l2 = f'      labels:        {self.train_label.shape},          {self.train_label.dtype}'
-    #     l3 = f'Test  data  : shape: {self.test_data.shape}, dtype: {self.test_data.dtype}'
-    #     l4 = f'      labels:        {self.test_label.shape},          {self.test_label.dtype}'
-    #     sep = (len(max(l1, l2, l3, l4))) * '-'
-    #     total_len = len(sep)
-    #     l1, l2, l3, l4 = ['|' + x + (total_len - len(x)) * ' ' + '|' + '\n' for x in [l1, l2, l3, l4]]
-    #     separator = '|' + sep + '|\n'
-    #     s = '\n' + separator + l1 + l2 + l3 + l4 + separator
-    #     return s
-
     def __data_read(self, train_data_path, train_label_path, test_data_path, test_label_path):
+        """
+        Load and normalize datasets, convert labels to one-hot encoding.
+        """
         self.train_data = np.load(train_data_path)
         self.train_label = np.load(train_label_path)
         self.train_label_origin = self.train_label
@@ -102,56 +84,66 @@ class DataLoader:
         self.test_label = np.load(test_label_path)
         self.test_label_origin = self.test_label
 
-        # 对训练数据进行归一化（标准化），用训练集的均值和标准差
         self.mean = np.mean(self.train_data, axis=0, keepdims=True)
         self.std = np.std(self.train_data, axis=0, keepdims=True)
-        # 防止除0
-        self.std[self.std == 0] = 1e-8
+        self.std[self.std == 0] = 1e-8  # Avoid division by zero
+
         self.train_data = (self.train_data - self.mean) / self.std
         self.test_data = (self.test_data - self.mean) / self.std
 
-        # 将标签转换为 one-hot 编码
         self.train_label = self.to_one_hot(self.train_label, self.num_classes)
         self.test_label = self.to_one_hot(self.test_label, self.num_classes)
 
     def to_one_hot(self, labels, num_classes):
         """
-        将标签转换为 one-hot 编码
-        :param labels: 整数标签数组，形状 (N, 1) 或 (N,)
-        :param num_classes: 类别数
-        :return: one-hot 编码数组，形状 (N, num_classes)
+        Convert integer labels to one-hot encoded matrix.
+
+        Args:
+            labels (ndarray): Label vector (N,)
+            num_classes (int): Total number of classes
+
+        Returns:
+            ndarray: One-hot encoded labels (N, num_classes)
         """
         labels = labels.flatten().astype(np.int32)
         one_hot = np.eye(num_classes)[labels]
         return one_hot
 
     def get_train_data(self):
+        """Return normalized training data"""
         return self.train_data
 
     def get_train_labels(self):
+        """Return one-hot encoded training labels"""
         return self.train_label
 
     def get_test_data(self):
+        """Return normalized test data"""
         return self.test_data
 
     def get_test_labels(self):
+        """Return one-hot encoded test labels"""
         return self.test_label
 
     def iter_train(self, shuffle=False):
+        """Return a sample-level iterator over training data"""
         return _DataIterable(self.train_data, self.train_label, shuffle)
 
     def iter_test(self, shuffle=False):
+        """Return a sample-level iterator over test data"""
         return _DataIterable(self.test_data, self.test_label, shuffle)
 
     def batch_generator(self, mode='train', batch_size=32, shuffle=False):
         """
-        生成 mini-batch 的迭代器
-        参数:
-            mode: 'train' 或 'test'
-            batch_size: 每个批次样本数
-            shuffle: 是否打乱数据（训练时一般为 True）
-        返回:
-            每次 yield 一个 (data_batch, label_batch)
+        Yield mini-batches of data.
+
+        Args:
+            mode (str): 'train' or 'test'
+            batch_size (int): Number of samples per batch
+            shuffle (bool): Whether to shuffle the data
+
+        Yields:
+            Tuple of (data_batch, label_batch)
         """
         if mode == 'train':
             data = self.train_data
@@ -172,8 +164,17 @@ class DataLoader:
             batch_indices = indices[start_idx: end_idx]
             yield data[batch_indices], labels[batch_indices]
 
+
 class _DataIterable:
     def __init__(self, data, label, shuffle=False):
+        """
+        A sample-level iterator used for evaluation or debugging.
+
+        Args:
+            data (ndarray): Data samples
+            label (ndarray): Corresponding labels
+            shuffle (bool): Whether to shuffle on reset
+        """
         self.data = data
         self.label = label
         self.shuffle = shuffle
@@ -184,20 +185,25 @@ class _DataIterable:
 
     def reset(self):
         """
-        重置迭代器：将索引归零，并根据需要重新打乱顺序。
-        实现迭代器复用。
+        Reset the iterator to the beginning and reshuffle if needed.
         """
         self.index = 0
         if self.shuffle:
             np.random.shuffle(self.indices)
 
     def __iter__(self):
+        """
+        Return iterator instance
+        """
         self.index = 0
         if self.shuffle:
             np.random.shuffle(self.indices)
         return self
 
     def __next__(self):
+        """
+        Return the next sample (data, label).
+        """
         if self.index >= len(self.data):
             raise StopIteration
         current_index = self.indices[self.index]
@@ -207,4 +213,5 @@ class _DataIterable:
         return data, label
 
     def __len__(self):
+        """Return the number of samples"""
         return len(self.label)
