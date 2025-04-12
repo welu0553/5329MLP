@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class Softmax:
     def __init__(self):
         # To store softmax probabilities for backward use or inspection

@@ -88,12 +88,18 @@ def train_all_models():
 
     print(f"Total combinations: {len(hyperparams_list) * len(para_grad_list)}")
 
+    """
+    For code testing, you can add breaks in the loop and reduce the number of 
+    epochs ('num_epochs' above) to reduce the number and time of training models.
+    """
     for i, hyperparams in enumerate(hyperparams_list):
         for j, para_grad in enumerate(para_grad_list):
             model = MLP(**hyperparams)
             training_model(model, loader, para_grad)
+            # break
             save_model(model, {'hyperparams': hyperparams, 'para_grad': para_grad},
                        f"./saves/{generate_model_filename()}")
+        # break
 
 # Evaluate all models and return the best performing one based on Macro-F1
 
@@ -204,9 +210,11 @@ def run_ablation_experiment(best_hyper, best_grad):
 # Run full pipeline
 if __name__ == '__main__':
     # Step 1: Train all models with different hyperparameter settings
-    #train_all_models()
+    # train_all_models()
+
     # Step 2: Evaluate all trained models and get the best configuration
     best_hyper, best_grad = evaluate_all_models()
+
     # Step 3: Perform ablation study on the best model
     run_ablation_experiment(best_hyper, best_grad)
 

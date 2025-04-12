@@ -2,13 +2,14 @@ import numpy as np
 from losses import Softmax
 from utils.evaluation import accuracy, confusion_matrix, precision_recall_f1, macro_f1
 
+
 def testing_model(model, loader):
     """
-    对测试集进行前向传播，计算分类准确率
-    :param model: 已加载参数的模型
-    :param test_data: 测试数据，形状 (N, features)
-    :param test_labels: 测试标签，one-hot 编码，形状 (N, num_classes)
-    :return: 准确率（0~1之间）
+    Perform forward propagation on the test set and calculate the classification accuracy
+    :param model: Model with loaded parameters
+    :param test_data: Test data, shape (N, features)
+    :param test_labels: Test labels, one-hot encoding, shape (N, num_classes)
+    :return: Accuracy (between 0 and 1)
     """
     model.eval()
 
@@ -16,14 +17,14 @@ def testing_model(model, loader):
     y_test_onehot = loader.get_test_labels()
     y_test = np.argmax(y_test_onehot, axis=1)
 
-    # 前向传播获取预测 logits
+    # Forward propagation to obtain predicted logits
     logits = model(X_test)
     softmax_module = Softmax()
     probs = softmax_module.forward(logits)
-    # 得到预测的类别
+    # Get the predicted category
     y_pred = np.argmax(probs, axis=1)
 
-    # 计算各种评估指标
+    # Calculate various evaluation indicators
     acc = accuracy(y_test, y_pred)
     ma_f1 = macro_f1(y_test, y_pred, 10)
     precisions, recalls, f1s = precision_recall_f1(y_test, y_pred, 10)

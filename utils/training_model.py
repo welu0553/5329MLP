@@ -3,6 +3,7 @@ import time
 from losses import Softmax, CrossEntropyLoss
 from optimizers import SGD, Adam
 
+
 def training_model(model, data_loader, para_grad):
     model.train()
 
@@ -13,7 +14,7 @@ def training_model(model, data_loader, para_grad):
     opt_para = para_grad['opt_para']
     data_shuffle = para_grad['shuffle']
 
-    # 初始化损失和优化器
+    # Initialize loss and optimizer
     softmax = Softmax()
     criterion = CrossEntropyLoss()
     params = model.parameters()
@@ -27,13 +28,13 @@ def training_model(model, data_loader, para_grad):
     else:
         raise TypeError('Wrong Input!!!')
 
-    # 用于调试的记录变量
+    # Logging variables for debugging
     loss_history = []
     grad_norm_history = []
-    param_norm_change_history = []  # 记录每个 epoch 平均参数更新变化
+    param_norm_change_history = []  # Record the average parameter update changes for each epoch
 
     # ---------------------
-    # 训练循环
+    # Training loop
     for epoch in range(num_epochs):
         epoch_loss = 0.0
         batch_grad_norms = []
@@ -43,20 +44,21 @@ def training_model(model, data_loader, para_grad):
 
         for X_batch, y_batch in data_loader.batch_generator(mode='train', batch_size=batch_size, shuffle=data_shuffle):
             num_batches += 1
-            # 记录更新前所有参数的 L2 范数
+            # Record the norm of all parameters before updating
             pre_param_norms = [np.linalg.norm(p['param']) for p in model.parameters()]
 
-            # 前向传播
+            # Forward Propagation
             logits = model(X_batch)
             probs = softmax.forward(logits)
             loss = criterion.forward(probs, y_batch)
             epoch_loss += loss
 
-            # 反向传播：计算梯度并存储到各层的持久参数字典中
+            # Backpropagation: Gradients are calculated and
+            # stored in the persistent parameter dictionary of each layer
             grad_logits = criterion.backward(probs, y_batch)
-            model.backward(grad_logits)  # 各层只计算并保存梯度
+            model.backward(grad_logits)  # Each layer only calculates and saves the gradient
 
-            # 记录当前 mini-batch 梯度的平均范数
+            # Record the average norm of the current mini-batch gradient
             batch_norms = []
             for p in model.parameters():
                 if p['grad'] is not None:
@@ -64,18 +66,18 @@ def training_model(model, data_loader, para_grad):
             if batch_norms:
                 batch_grad_norms.append(np.mean(batch_norms))
 
-            # 更新参数
+            # Update Parameters
             optimizer.step()
 
-            # 记录更新后所有参数的 L2 范数
+            # Record the L2 norm of all parameters after update
             post_param_norms = [np.linalg.norm(p['param']) for p in model.parameters()]
-            # 计算每个参数的更新变化（绝对值），然后求平均
+            # Calculate the updated change (absolute value) of each parameter and then average it
             batch_change = np.mean([abs(post - pre) for pre, post in zip(pre_param_norms, post_param_norms)])
             param_norm_changes.append(batch_change)
             if batch_change < 1e-12:
                 print(f"DEBUG: Epoch {epoch + 1}, Batch {num_batches} param change is nearly 0")
 
-            # 清零梯度
+            # Zero gradient
             optimizer.zero_grad()
 
         avg_loss = epoch_loss / num_batches

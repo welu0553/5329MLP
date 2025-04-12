@@ -1,21 +1,22 @@
 import numpy as np
 
+
 def accuracy(y_true, y_pred):
     """
-    计算准确率
-    :param y_true: 真实标签，一维 numpy 数组
-    :param y_pred: 预测标签，一维 numpy 数组
-    :return: 准确率（float）
+    Calculate accuracy
+    :param y_true: true label, one-dimensional numpy array
+    :param y_pred: predicted label, one-dimensional numpy array
+    :return: accuracy (float)
     """
     return np.mean(y_true == y_pred)
 
 def confusion_matrix(y_true, y_pred, num_classes):
     """
-    计算混淆矩阵
-    :param y_true: 真实标签，一维 numpy 数组
-    :param y_pred: 预测标签，一维 numpy 数组
-    :param num_classes: 类别数
-    :return: 混淆矩阵，二维 numpy 数组，形状 (num_classes, num_classes)
+    Calculate confusion matrix
+    :param y_true: true label, 1D numpy array
+    :param y_pred: predicted label, 1D numpy array
+    :param num_classes: number of classes
+    :return: confusion matrix, 2D numpy array, shape (num_classes, num_classes)
     """
     cm = np.zeros((num_classes, num_classes), dtype=int)
     for t, p in zip(y_true, y_pred):
@@ -24,11 +25,11 @@ def confusion_matrix(y_true, y_pred, num_classes):
 
 def precision_recall_f1(y_true, y_pred, num_classes):
     """
-    分别计算每个类别的精确率、召回率和 F1 分数
-    :param y_true: 真实标签，一维 numpy 数组
-    :param y_pred: 预测标签，一维 numpy 数组
-    :param num_classes: 类别数
-    :return: (precisions, recalls, f1s) 三个 numpy 数组，每个长度为 num_classes
+    Calculate the precision, recall and F1 score for each category
+    :param y_true: true label, one-dimensional numpy array
+    :param y_pred: predicted label, one-dimensional numpy array
+    :param num_classes: number of categories
+    :return: (precisions, recalls, f1s) three numpy arrays, each with a length of num_classes
     """
     cm = confusion_matrix(y_true, y_pred, num_classes)
     precisions = np.zeros(num_classes)
@@ -46,11 +47,11 @@ def precision_recall_f1(y_true, y_pred, num_classes):
 
 def macro_f1(y_true, y_pred, num_classes):
     """
-    计算宏平均 F1 分数
-    :param y_true: 真实标签，一维 numpy 数组
-    :param y_pred: 预测标签，一维 numpy 数组
-    :param num_classes: 类别数
-    :return: 宏 F1 分数（float）
+    Calculate the macro average F1 score
+    :param y_true: true label, 1D numpy array
+    :param y_pred: predicted label, 1D numpy array
+    :param num_classes: number of classes
+    :return: macro F1 score (float)
     """
     _, _, f1s = precision_recall_f1(y_true, y_pred, num_classes)
     return np.mean(f1s)

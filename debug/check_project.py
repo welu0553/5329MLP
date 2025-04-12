@@ -1,11 +1,11 @@
 import numpy as np
-import time
 import matplotlib.pyplot as plt
-
 from data_loader import DataLoader
 from models.mlp_model import MLP
 from losses import Softmax, CrossEntropyLoss
 from optimizers import SGD
+
+
 def check_project():
     # ---------------------
     # Data paths (modify based on your actual dataset location)

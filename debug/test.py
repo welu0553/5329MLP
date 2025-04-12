@@ -1,10 +1,8 @@
-import numpy as np
 import time
-
 from data_loader import DataLoader
 from models.mlp_model import MLP
 from losses import Softmax, CrossEntropyLoss
-from optimizers import SGD  # 或者使用 Adam
+from optimizers import SGD  # or use Adam
 
 # Hyperparameter settings
 learning_rate = 0.05

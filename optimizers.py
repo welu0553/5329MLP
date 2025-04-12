@@ -1,13 +1,14 @@
 import numpy as np
 
+
 class Optimizer:
     '''Base class for all optimizers'''
 
     def __init__(self, params, lr=0.01):
         """
         :param params: List of parameter dictionaries. Each dict must contain:
-                       - 'param': the parameter array (np.ndarray)
-                       - 'grad': the gradient array (np.ndarray)
+            - 'param': the parameter array (np.ndarray)
+            - 'grad': the gradient array (np.ndarray)
         :param lr: Learning rate (float)
         """
         self.params = params

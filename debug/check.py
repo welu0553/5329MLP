@@ -2,6 +2,8 @@ import numpy as np
 from data_loader import DataLoader
 from models.mlp_model import MLP
 from losses import Softmax, CrossEntropyLoss
+
+
 # Set data paths and configuration (modify as needed)
 train_data_path = '../Assignment1-Dataset/train_data.npy'
 train_label_path = '../Assignment1-Dataset/train_label.npy'

@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class DataLoader:
     def __init__(self, train_data_path, train_label_path, test_data_path, test_label_path, num_classes=10):
         """
