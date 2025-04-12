@@ -9,6 +9,7 @@ Model selection and result output Automatically select the model with the highes
 Ablation experiment Based on the structure of the ‘best model’, the following three structural ablation experiments are performed: Remove Dropout (set to 0) Turn off BatchNorm Replace the activation function from ReLU to GELU Each structural variant is reinitialised and trained to ensure the fairness of the experiment; After all variants are tested, the ablation comparison chart ablation_result.pngis automatically generated to show the changes in Accuracy and Macro-F1; The specific hyperparameter configuration of each ablation experiment is also output for easy tracking and reproduction.
 
 ### 项目架构
+```plaintext
 project_root/
 ├── main.py               # 程序入口。可以通过设置超参数进行训练或测试模型
 ├── data_loader.py        # 数据加载模块。将传入的数据输出为可迭代对象，并可选择性使用mini-batch及onehot编码
