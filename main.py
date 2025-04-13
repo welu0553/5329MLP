@@ -1,8 +1,6 @@
 import os
 import csv
-import matplotlib.pyplot as plt
 from datetime import datetime
-import numpy as np
 from data_loader import DataLoader
 from models import MLP
 from utils import load_model, assign_parameters, testing_model, training_model, save_model
@@ -138,16 +136,6 @@ def evaluate_all_models():
     print(f"\n Tested all {len(results)} models.")
     print(f"Best Model: {best_name}\nAccuracy: {best_acc:.4f}, Macro-F1: {best_f1:.4f}\nHyperparams: {best_hyper}\nTrain Params: {best_grad}")
 
-    # Visualize best model performance
-    plt.figure(figsize=(6, 4))
-    plt.plot(['Accuracy', 'Macro-F1'], [best_acc, best_f1], marker='o', linewidth=2, color='royalblue')
-    plt.title('Best Model Performance', fontsize=12)
-    plt.xlabel('Metric')
-    plt.ylabel('Score')
-    plt.ylim(0, 1)
-    plt.grid(True, linestyle='--', alpha=0.6)
-    plt.tight_layout()
-    plt.savefig('best_model_result.png')
 
     return best_hyper, best_grad
 
@@ -176,31 +164,6 @@ def run_ablation_experiment(best_hyper, best_grad):
         result = testing_model(model, loader)
         acc, f1 = result[0], result[4]
         ablation_results.append((name, acc, f1, hparams))
-
-    names = [r[0] for r in ablation_results]
-    accs = [r[1] for r in ablation_results]
-    f1s = [r[2] for r in ablation_results]
-    params = [str(r[3]) for r in ablation_results]
-
-    # Save and visualize ablation experiment results
-    plt.figure(figsize=(10, 6))
-    x = np.arange(len(names))
-    plt.plot(x, accs, marker='o', label='Accuracy', linewidth=2)
-    plt.plot(x, f1s, marker='s', label='Macro-F1', linewidth=2)
-    plt.xticks(x, names, rotation=15, fontsize=10)
-    plt.ylim(0, 1)
-    plt.grid(True, linestyle='--', alpha=0.6)
-    plt.legend()
-    plt.title('Ablation Study on Best Model', fontsize=14)
-
-    # Annotate each point with accuracy and f1
-    for i, (acc, f1) in enumerate(zip(accs, f1s)):
-        plt.text(i, acc + 0.02, f"Acc: {acc:.4f}", ha='center', fontsize=9, color='blue')
-        plt.text(i, f1 + 0.02, f"F1: {f1:.4f}", ha='center', fontsize=9, color='darkorange')
-
-    plt.tight_layout()
-    plt.savefig('ablation_result.png')
-    print("Ablation experiment results saved as ablation_result.png")
 
     # Print table-like output in terminal
     print("\n===== Ablation Results =====")
