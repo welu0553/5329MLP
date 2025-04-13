@@ -29,5 +29,10 @@ project_root/
 │   ├── training_model.py # Model training script. Encapsulates the entire model training process for convenient use in the main function
 │   └── testing_model.py  # Model testing script. Encapsulates the entire model testing process for convenient use in the main function
 └── README.md             # Project documentation
-
 ```
+
+### 3. Advanced Operation
+We implement GELU and Adam.
+
+### 4. Code Running Instructions
+In the main function in the project_root/main.py, uncomment the functions under each step.
