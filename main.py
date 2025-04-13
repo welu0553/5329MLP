@@ -134,7 +134,7 @@ def evaluate_all_models():
             writer.writerow([r[0], r[1], r[2], str(r[3]), str(r[4])])
 
     print(f"\n Tested all {len(results)} models.")
-    print(f"Best Model: {best_name}\nAccuracy: {best_acc:.4f}, Macro-F1: {best_f1:.4f}\nHyperparams: {best_hyper}\nTrain Params: {best_grad}")
+    print(f"Best Model: {best_name}\nHyperparams: {best_hyper}\nTrain Params: {best_grad}")
 
 
     return best_hyper, best_grad
@@ -151,7 +151,8 @@ def run_ablation_experiment(best_hyper, best_grad):
     )
 
     variants = [
-        ('Original', best_hyper),
+        ('Original(SGD)', best_hyper),
+        ('Original (Adam)', best_hyper,{**best_grad, 'opt': 'Adam', 'opt_para': {'beta1': 0.9, 'beta2': 0.999, 'eps': 1e-6}}),
         ('No Dropout', {**best_hyper, 'dropout_prob': 0.0}),
         ('No BatchNorm', {**best_hyper, 'use_batchnorm': False}),
         ('GELU Activation', {**best_hyper, 'activation': 'gelu'})
