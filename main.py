@@ -136,7 +136,6 @@ def evaluate_all_models():
     print(f"\n Tested all {len(results)} models.")
     print(f"Best Model: {best_name}\nHyperparams: {best_hyper}\nTrain Params: {best_grad}")
 
-
     return best_hyper, best_grad
 
 # Run ablation experiments on variants of the best model
