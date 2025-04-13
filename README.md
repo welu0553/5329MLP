@@ -28,6 +28,7 @@ project_root/
 │   ├── functions.py      # Function file. Contains various helper functions to enhance code readability
 │   ├── training_model.py # Model training script. Encapsulates the entire model training process for convenient use in the main function
 │   └── testing_model.py  # Model testing script. Encapsulates the entire model testing process for convenient use in the main function
+├── requirements.txt      # Package requirements
 └── README.md             # Project documentation
 ```
 
